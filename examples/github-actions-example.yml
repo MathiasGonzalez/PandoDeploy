@@ -1,0 +1,41 @@
+name: Deploy with PandoDeploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Build Docker image
+      run: docker build -t myapp:${{ github.sha }} .
+    
+    - name: Install PandoDeploy CLI
+      run: dotnet tool install -g PandoDeploy
+    
+    - name: Deploy to VPS
+      run: |
+        pandodeploy deploy \
+          --image myapp:${{ github.sha }} \
+          --server ${{ secrets.PANDODEPLOY_SERVER }} \
+          --api-key ${{ secrets.PANDODEPLOY_API_KEY }} \
+          --port 8080 \
+          --env "ASPNETCORE_ENVIRONMENT=Production" \
+          --env "ConnectionStrings__Default=${{ secrets.DB_CONNECTION }}" \
+          --name myapp-prod
+      
+    - name: Check deployment status
+      run: |
+        pandodeploy status \
+          --server ${{ secrets.PANDODEPLOY_SERVER }} \
+          --api-key ${{ secrets.PANDODEPLOY_API_KEY }}
+

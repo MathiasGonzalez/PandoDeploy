@@ -1,0 +1,60 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Get version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release /p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # TODO: Add/Fix tests
+    # - name: Test
+    #   run: dotnet test --no-build --configuration Release --verbosity normal
+    
+    - name: Pack CLI Tool
+      run: dotnet pack src/PandoDeploy.CLI/PandoDeploy.CLI.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.version.outputs.VERSION }}
+    
+    # TODO: Push to NuGet (disabled for now)
+    # - name: Push to NuGet
+    #   run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+  
+    # TODO: Create Release (disabled for now)
+    # - name: Create Release
+    #   uses: softprops/action-gh-release@v1
+    #   if: startsWith(github.ref, 'refs/tags/')
+    #   with:
+    #     files: ./nupkgs/*.nupkg
+    #     generate_release_notes: true
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

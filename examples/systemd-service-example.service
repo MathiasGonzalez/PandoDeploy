@@ -1,0 +1,30 @@
+[Unit]
+Description=PandoDeploy Server
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=notify
+User=pandodeploy
+Group=docker
+WorkingDirectory=/opt/pandodeploy
+ExecStart=/usr/bin/dotnet /opt/pandodeploy/PandoDeploy.Server.dll
+Restart=always
+RestartSec=10
+
+Environment="ASPNETCORE_URLS=http://+:5000"
+Environment="PandoDeploy__Port=5000"
+Environment="PandoDeploy__DockerEndpoint=unix:///var/run/docker.sock"
+Environment="PandoDeploy__ImageStoragePath=/var/lib/pandodeploy/images"
+Environment="PandoDeploy__DatabasePath=/var/lib/pandodeploy/pandodeploy.db"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pandodeploy
+
+[Install]
+WantedBy=multi-user.target
+

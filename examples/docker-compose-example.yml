@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  pandodeploy-server:
+    image: mcr.microsoft.com/dotnet/aspnet:8.0
+    container_name: pandodeploy-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/var/lib/pandodeploy
+      - ./src/PandoDeploy.Server:/app
+    working_dir: /app
+    command: dotnet run
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - PandoDeploy__Port=5000
+      - PandoDeploy__DockerEndpoint=unix:///var/run/docker.sock
+      - PandoDeploy__ImageStoragePath=/var/lib/pandodeploy/images
+      - PandoDeploy__DatabasePath=/var/lib/pandodeploy/pandodeploy.db
+      - PandoDeploy__Authentication__EnableApiKeys=true
+      - PandoDeploy__Authentication__EnableMTLS=false
+    restart: unless-stopped
+
